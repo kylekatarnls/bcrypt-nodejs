@@ -618,18 +618,32 @@ function hash(data, salt, progress, callback) {
 			encrypted - Second parameter to the callback providing the encrypted form.
 	*/
 	if(!callback) {
-		throw "No callback function was given."
+		callback = progress;
+		progress = function () {};
 	}
-	process.nextTick(function() {
-		var result = null;
-		var error = null;
-		try {
-			result = hashSync(data, salt, progress)
-		} catch(err) {
-			error = err;
-		}
-		callback(error, result);
-	});
+	var done = function (salt) {
+		process.nextTick(function() {
+			var result = null;
+			var error = null;
+			try {
+				result = hashSync(data, salt, progress)
+			} catch(err) {
+				error = err;
+			}
+			callback(error, result);
+		});
+	}
+	if(typeof(salt) === 'number') {
+		genSalt(salt, function (error, salt) {
+			if(error) {
+				callback(error);
+			} else {
+				done(salt);
+			}
+		});
+	} else {
+		done(salt);
+	}
 }
 
 function compareSync(data, encrypted) {
